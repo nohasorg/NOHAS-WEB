@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lato:wght@400&family=Montserrat:wght@600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #2F5E3A;
+  --color-primary-foreground: #FFFFFF;
+  --color-primary-hover: #264b2e; /* 10% darker */
+  
+  --color-secondary: #7A9A7A;
+  --color-secondary-foreground: #FFFFFF;
+  
+  --color-accent: #BFD3C1;
+  --color-accent-foreground: #2B2B2B;
+
+  --color-background: #F5F2E8; /* Ivory Beige */
+  --color-foreground: #2B2B2B; /* Charcoal */
+  
+  --color-background-alt: #E7DECA; /* Warm Sand */
+  --color-stone: #A8A193;
+  --color-jet: #111111;
+
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Lato", sans-serif;
+  --font-display: "Montserrat", sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    line-height: 1.7;
+  }
+  
+  h1, h2 {
+    @apply font-serif text-jet font-semibold;
+  }
+  
+  h3, h4, .font-display {
+    @apply font-display text-jet font-semibold;
+  }
+}

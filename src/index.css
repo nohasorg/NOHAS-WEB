@@ -1,40 +1,121 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lato:wght@400&family=Montserrat:wght@600&display=swap');
-@import 'tailwindcss';
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700&family=Montserrat:wght@500;600;700&display=swap");
+@import "tailwindcss";
 
 @theme {
-  --color-primary: #2F5E3A;
-  --color-primary-foreground: #FFFFFF;
-  --color-primary-hover: #264b2e; /* 10% darker */
-  
-  --color-secondary: #7A9A7A;
-  --color-secondary-foreground: #FFFFFF;
-  
-  --color-accent: #BFD3C1;
-  --color-accent-foreground: #2B2B2B;
-
-  --color-background: #F5F2E8; /* Ivory Beige */
-  --color-foreground: #2B2B2B; /* Charcoal */
-  
-  --color-background-alt: #E7DECA; /* Warm Sand */
-  --color-stone: #A8A193;
+  --color-primary: #2f5e3a;
+  --color-primary-hover: #264b2e;
+  --color-secondary: #7a9a7a;
+  --color-accent: #bfd3c1;
+  --color-background: #f5f2e8;
+  --color-foreground: #2b2b2b;
+  --color-background-alt: #e7deca;
+  --color-stone: #a8a193;
   --color-jet: #111111;
-
   --font-serif: "Cormorant Garamond", serif;
   --font-sans: "Lato", sans-serif;
   --font-display: "Montserrat", sans-serif;
 }
 
 @layer base {
-  body {
-    @apply bg-background text-foreground font-sans antialiased;
-    line-height: 1.7;
-  }
-  
-  h1, h2 {
-    @apply font-serif text-jet font-semibold;
-  }
-  
-  h3, h4, .font-display {
-    @apply font-display text-jet font-semibold;
-  }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-background text-foreground font-sans antialiased; line-height: 1.7; }
+  h1, h2 { @apply font-serif font-semibold text-jet; }
+  h3, h4, .font-display { @apply font-display font-semibold text-jet; }
+  ::selection { background: #bfd3c1; color: #111111; }
+  :focus-visible { outline: 3px solid #7a9a7a; outline-offset: 3px; }
+}
+
+@layer components {
+  .section-shell { @apply mx-auto max-w-[1240px] px-5 py-24 lg:px-8; }
+  .section-shell h2 { @apply max-w-2xl text-5xl leading-[0.98] md:text-6xl; }
+  .button-primary, .button-secondary { @apply inline-flex min-h-12 items-center gap-3 rounded-full px-5 py-3 font-display text-xs font-semibold uppercase tracking-[0.1em] transition duration-200; }
+  .button-primary { @apply bg-primary text-white hover:bg-primary-hover; }
+  .button-secondary { @apply border border-primary text-primary hover:bg-primary hover:text-white; }
+  .icon-button { @apply flex h-11 w-11 items-center justify-center rounded-full border border-primary text-xl text-primary; }
+  .nav-link { @apply font-display text-xs font-semibold uppercase tracking-[0.1em] text-foreground/75 transition hover:text-primary; }
+  .leaf-mark { @apply pointer-events-none absolute select-none font-serif text-[24rem] leading-none text-accent/25; }
+  .hero-image { @apply aspect-[0.86] overflow-hidden border-[14px] border-accent/50 bg-accent; }
+  .hero-image img { @apply h-full w-full object-cover grayscale-[12%] mix-blend-multiply; }
+  .about-gallery { @apply items-stretch; }
+  .about-gallery-image { @apply h-full min-h-[320px] w-full rounded-[1.5rem] object-cover; }
+  .impact-stat { @apply flex flex-col items-center justify-center px-4 py-9 text-center; }
+  .impact-stat strong { @apply font-serif text-5xl font-semibold text-primary md:text-6xl; }
+  .impact-stat span { @apply mt-1 font-display text-[10px] font-semibold uppercase tracking-[0.13em] text-foreground/70; }
+  .pillar-card { @apply border border-white/20 bg-white/5 p-6 transition duration-300 hover:-translate-y-1 hover:bg-white/10; }
+  .pillar-number { @apply font-display text-xs tracking-[0.15em] text-accent; }
+  .outlined-panel { @apply border border-stone/50 bg-background p-7 md:p-9; }
+  .eyebrow, .footer-heading { @apply font-display text-xs font-semibold uppercase tracking-[0.14em] text-primary; }
+  .role-list { @apply mt-7 space-y-5; }
+  .role-list li { @apply grid gap-1 border-t border-stone/35 pt-4; }
+  .role-list strong { @apply font-display text-sm; }
+  .role-list span { @apply text-sm text-foreground/65; }
+  .content-card, .event-card { @apply border border-stone/40 bg-background-alt p-6 transition duration-300 hover:-translate-y-1 hover:border-primary/50; }
+  .content-card h3, .event-card h3 { @apply text-xl leading-tight; }
+  .tag, .filter-button { @apply font-display text-[10px] font-semibold uppercase tracking-[0.12em]; }
+  .tag { @apply bg-accent px-2 py-1 text-primary; }
+  .benefit-box { @apply border-l-4 border-primary bg-background p-6 shadow-[0_12px_30px_rgba(47,94,58,0.08)]; }
+  .partner-row { @apply grid grid-cols-2 border-y border-stone/50 md:grid-cols-3 lg:grid-cols-6; }
+  .partner-row span { @apply border-b border-stone/50 px-4 py-7 text-center font-display text-xs font-semibold tracking-[0.1em] text-stone md:border-b-0 md:border-r; }
+  .filter-button { @apply rounded-full border border-stone/50 px-4 py-2 text-foreground/65 transition hover:border-primary hover:text-primary; }
+  .filter-button.active { @apply border-primary bg-primary text-white; }
+  .gallery-card { @apply overflow-hidden border border-stone/40 bg-background; }
+  .gallery-card img { @apply h-56 w-full object-cover grayscale-[15%] transition duration-500; }
+  .gallery-card:hover img { @apply scale-105; }
+  .gallery-card div { @apply p-5; }
+  .gallery-card h3 { @apply mt-2 text-lg; }
+  .date-badge { @apply mb-6 flex h-14 w-14 flex-col items-center justify-center bg-primary text-white; }
+  .date-badge strong { @apply font-serif text-2xl leading-none; }
+  .date-badge span { @apply font-display text-[9px] tracking-[0.12em]; }
+  .race-map { @apply relative mt-6 min-h-[300px] overflow-hidden border border-accent/35 bg-[#214b2d] shadow-[inset_0_0_0_8px_rgba(191,211,193,0.06),0_18px_40px_rgba(17,17,17,0.18)]; }
+  .race-map-grid { @apply absolute inset-0 opacity-20 [background-image:linear-gradient(rgba(191,211,193,0.28)_1px,transparent_1px),linear-gradient(90deg,rgba(191,211,193,0.28)_1px,transparent_1px)] [background-size:34px_34px]; }
+  .race-map-grid::after { content: ""; @apply absolute inset-0 bg-[radial-gradient(circle_at_18%_40%,rgba(191,211,193,0.2),transparent_18%),radial-gradient(circle_at_82%_62%,rgba(231,222,202,0.13),transparent_20%)]; }
+  .race-map-glow { @apply absolute -left-24 bottom-0 h-48 w-72 rounded-full bg-accent/10 blur-3xl; }
+  .race-route { @apply absolute inset-0 h-full w-full; fill: none; stroke: #bfd3c1; stroke-linecap: round; stroke-linejoin: round; stroke-width: 18; opacity: 0.3; }
+  .race-route-dash { stroke: #f5f2e8; stroke-width: 3; stroke-dasharray: 5 10; opacity: 0.9; }
+  .race-route-mobile { @apply hidden; }
+  .race-map ol { @apply absolute inset-0; }
+  .race-checkpoint { @apply absolute z-10 flex max-w-[10rem] items-start gap-2; }
+  .race-checkpoint-number { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-4 border-[#214b2d] bg-accent font-display text-[10px] font-bold text-primary shadow-[0_0_0_2px_rgba(245,242,232,0.75)]; }
+  .race-checkpoint h3 { @apply mt-1 text-sm leading-tight; }
+  .race-checkpoint p { @apply mt-1 text-xs leading-snug; }
+  .race-checkpoint-1 { left: 5%; top: 59%; }
+  .race-checkpoint-2 { left: 25%; top: 10%; }
+  .race-checkpoint-3 { left: 46%; top: 61%; }
+  .race-checkpoint-4 { left: 62%; top: 8%; }
+  .race-checkpoint-5 { right: 4%; top: 36%; }
+  form label { @apply grid gap-2 font-display text-xs font-semibold uppercase tracking-[0.1em] text-foreground; }
+  form input, form select, form textarea { @apply min-h-12 w-full border border-stone/70 bg-transparent px-4 py-3 font-sans text-base font-normal tracking-normal text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20; }
+  form textarea { @apply min-h-32 resize-y; }
+  form button:disabled { @apply cursor-wait opacity-60; }
+  .merch-grid { @apply grid grid-cols-3 gap-3; }
+  .merch-grid article { @apply overflow-hidden border border-stone/30 bg-background; }
+  .merch-grid img { @apply aspect-square w-full object-cover; }
+  .merch-grid p { @apply p-3 font-display text-[10px] font-semibold uppercase tracking-[0.08em]; }
+  .footer-heading { @apply text-accent; }
+  .footer-links { @apply mt-4 grid gap-2 text-sm; }
+  .footer-links a { @apply transition hover:text-background; }
+}
+
+@media (max-width: 640px) {
+  .leaf-mark { @apply right-[-18%] top-[28%] text-[14rem]; }
+  .hero-image { @apply border-[8px]; }
+  .merch-grid { @apply gap-2; }
+  .merch-grid p { @apply text-[9px]; }
+}
+
+@media (max-width: 767px) {
+  .race-map { @apply min-h-[400px]; }
+  .race-route-desktop { @apply hidden; }
+  .race-route-mobile { @apply block; }
+  .race-checkpoint { @apply max-w-[12rem]; }
+  .race-checkpoint-1 { @apply left-[8%] top-[3%]; }
+  .race-checkpoint-2 { @apply right-[5%] left-auto top-[22%]; }
+  .race-checkpoint-3 { @apply left-[8%] top-[40%]; }
+  .race-checkpoint-4 { @apply right-[5%] left-auto top-[57%]; }
+  .race-checkpoint-5 { @apply bottom-[3%] left-[8%] top-auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

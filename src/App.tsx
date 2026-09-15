@@ -1,309 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react"
+import gsap from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
+import { submitApiForm } from "./lib/api"
+
+gsap.registerPlugin(ScrollTrigger)
 
 const Sparkle = ({ className = "" }: { className?: string }) => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-    <path d="M8 0L9.4 6.6L16 8L9.4 9.4L8 16L6.6 9.4L0 8L6.6 6.6L8 0Z" fill="currentColor"/>
+  <svg viewBox="0 0 16 16" aria-hidden="true" className={className}>
+    <path d="M8 0 9.4 6.6 16 8l-6.6 1.4L8 16 6.6 9.4 0 8l6.6-1.4L8 0Z" fill="currentColor" />
   </svg>
-);
+)
 
-const SectionLabel = ({ text, color = "text-primary" }: { text: string, color?: string }) => (
-  <div className={`flex items-center gap-3 ${color} font-display text-sm tracking-[0.08em] uppercase mb-4`}>
-    <Sparkle />
+const Arrow = () => <span aria-hidden="true">↗</span>
+
+const SectionLabel = ({ text, light = false }: { text: string; light?: boolean }) => (
+  <div className={`mb-4 flex items-center gap-3 font-display text-xs font-semibold uppercase tracking-[0.14em] ${light ? "text-accent" : "text-primary"}`}>
+    <Sparkle className="h-3.5 w-3.5" />
     <span>{text}</span>
   </div>
-);
+)
+
+const usePageMotion = (scope: React.RefObject<HTMLDivElement | null>) => {
+  useLayoutEffect(() => {
+    const root = scope.current
+    if (!root) return
+    const context = gsap.context(() => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+      gsap.from('[data-motion="nav"]', { y: -18, opacity: 0, duration: 0.7, ease: "power3.out" })
+      gsap.from('[data-motion="hero"] > *', { y: 30, opacity: 0, duration: 0.8, stagger: 0.1, delay: 0.15, ease: "power3.out" })
+      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => gsap.from(element, { y: 30, opacity: 0, duration: 0.7, ease: "power3.out", scrollTrigger: { trigger: element, start: "top 88%", once: true } }))
+      gsap.utils.toArray<HTMLElement>("[data-counter]").forEach((counter) => {
+        const progress = { value: 0 }
+        const target = Number(counter.dataset.counterTarget ?? 0)
+        const suffix = counter.dataset.counterSuffix ?? ""
+        const render = () => { counter.textContent = `${Math.round(progress.value).toLocaleString()}${suffix}` }
+        gsap.to(progress, { value: target, duration: 1.6, ease: "power2.out", scrollTrigger: { trigger: counter, start: "top 90%", once: true }, onUpdate: render })
+      })
+    }, root)
+    return () => context.revert()
+  }, [scope])
+}
+
+const Logo = ({ dark = false }: { dark?: boolean }) => (
+  <a href="#home" className={`flex items-center gap-3 font-display text-xl font-bold tracking-[0.22em] ${dark ? "text-white" : "text-jet"}`}>
+    <span className="flex h-9 w-9 items-center justify-center border border-current text-primary"><Sparkle className="h-5 w-5" /></span>
+    <span>NOHAS</span>
+  </a>
+)
 
 const Navbar = () => {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-accent ${scrolled ? 'bg-background/95 backdrop-blur-sm shadow-md' : 'bg-background'}`}>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-primary font-display font-semibold text-2xl">
-          <Sparkle className="text-primary w-6 h-6" />
-          <span>NOHAS</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-sans">
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">Home</a>
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">About</a>
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">Awareness</a>
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">Events</a>
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">Get Involved</a>
-          <a href="#" className="text-jet font-medium hover:text-primary transition-colors">Contact</a>
-        </div>
-        <button className="bg-primary hover:bg-primary-hover text-white font-display text-sm tracking-widest uppercase px-6 py-3 rounded-sm transition-colors shadow-sm hidden md:block">
-          Join Us
-        </button>
+  const [scrolled, setScrolled] = useState(false)
+  const [open, setOpen] = useState(false)
+  useEffect(() => { const onScroll = () => setScrolled(window.scrollY > 24); window.addEventListener("scroll", onScroll); return () => window.removeEventListener("scroll", onScroll) }, [])
+  const links = [["About", "about"], ["Awareness", "awareness"], ["Journal", "journal"], ["Events", "events"], ["Get involved", "get-involved"]]
+  return <>
+    <nav data-motion="nav" className={`fixed inset-x-0 top-0 z-50 border-b border-accent/70 transition-all ${scrolled ? "bg-background/95 shadow-[0_8px_30px_rgba(43,43,43,0.08)] backdrop-blur" : "bg-background"}`}>
+      <div className="mx-auto flex h-[76px] max-w-[1240px] items-center justify-between px-5 lg:px-8"><Logo />
+        <div className="hidden items-center gap-7 md:flex">{links.map(([label, id]) => <a key={id} href={`#${id}`} className="nav-link">{label}</a>)}</div>
+        <a href="#get-involved" className="button-primary hidden md:inline-flex">Join the movement <Arrow /></a>
+        <button type="button" aria-label="Open menu" aria-expanded={open} onClick={() => setOpen(!open)} className="icon-button md:hidden">{open ? "×" : "☰"}</button>
       </div>
     </nav>
-  );
-};
-
-const Hero = () => (
-  <section className="min-h-[90vh] bg-background relative pt-20 flex items-center overflow-hidden">
-    <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] bg-accent/20 rounded-full blur-3xl pointer-events-none" />
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8 w-full grid grid-cols-1 md:grid-cols-[60%_40%] gap-12 items-center relative z-10 py-12 md:py-0">
-      <div>
-        <SectionLabel text="Promoting Awareness" />
-        <h1 className="text-5xl md:text-[72px] leading-tight mb-6">Building Healthier Smiles Across Pakistan</h1>
-        <p className="text-lg text-foreground mb-10 max-w-xl">
-          Join the National Oral Health Awareness Society in our mission to promote oral health education and provide accessible dental care to communities everywhere.
-        </p>
-        <div className="flex flex-wrap gap-4">
-          <button className="bg-primary hover:bg-primary-hover text-white font-display text-sm tracking-[0.1em] uppercase px-8 py-4 rounded-sm transition-colors shadow-sm">
-            Explore Our Work
-          </button>
-          <button className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-display text-sm tracking-[0.1em] uppercase px-8 py-4 rounded-sm transition-colors">
-            Learn More
-          </button>
-        </div>
-      </div>
-      <div className="relative mt-8 md:mt-0">
-        <div className="w-full aspect-[4/5] bg-accent/40 rounded-[32px] overflow-hidden relative border border-accent">
-          <img src="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&w=800&q=80" alt="Smiling family" className="w-full h-full object-cover mix-blend-overlay opacity-90" />
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const ImpactStats = () => (
-  <section className="bg-background-alt py-16 md:py-20 border-y border-stone/20">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-0 divide-stone/30 md:divide-x">
-        {[
-          { number: "50+", label: "Awareness Campaigns" },
-          { number: "120k", label: "Communities Reached" },
-          { number: "15k", label: "Dental Checkups" },
-          { number: "850", label: "Volunteers" }
-        ].map((stat, i) => (
-          <div key={i} className="text-center px-4">
-            <div className="text-5xl md:text-6xl font-serif text-primary mb-2">{stat.number}</div>
-            <div className="font-display text-sm uppercase tracking-widest text-jet">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const AboutPreview = () => (
-  <section className="bg-background py-20 md:py-[80px]">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
-      <div>
-        <SectionLabel text="Who We Are" />
-        <h2 className="text-4xl md:text-5xl mb-6">Dedicated to better oral health for all.</h2>
-        <p className="mb-6 text-foreground text-lg">
-          We believe that oral health is a fundamental right. Our society bridges the gap between dental professionals and underserved communities, bringing education and preventive care to where it's needed most.
-        </p>
-        <a href="#" className="inline-flex items-center gap-2 text-primary font-display font-semibold hover:gap-3 transition-all">
-          <span>Our Story</span>
-          <span>→</span>
-        </a>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-4 pt-12">
-          <img src="https://images.unsplash.com/photo-1598256989800-fea5ce51426c?auto=format&fit=crop&w=600&q=80" alt="Dental care" className="w-full h-64 object-cover rounded-2xl" />
-        </div>
-        <div className="space-y-4">
-          <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&w=600&q=80" alt="Community education" className="w-full h-64 object-cover rounded-2xl" />
-        </div>
-      </div>
-    </div>
-  </section>
-);
-
-const CorePillars = () => (
-  <section className="bg-primary py-20 md:py-[80px] text-white">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8">
-      <div className="text-center mb-16 flex flex-col items-center">
-        <SectionLabel text="Our Mission" color="text-accent" />
-        <h2 className="text-4xl md:text-5xl text-white">Three Pillars of Health</h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          { title: "Prevention", desc: "Equipping individuals with the tools and knowledge to stop dental issues before they start.", icon: "Shield" },
-          { title: "Education", desc: "Running workshops in schools and community centers to build lasting healthy habits.", icon: "Book" },
-          { title: "Community", desc: "Building a network of volunteers and professionals dedicated to serving the underserved.", icon: "Users" }
-        ].map((pillar, i) => (
-          <div key={i} className="bg-white/5 border border-white/10 p-8 rounded-2xl hover:-translate-y-1 transition-transform duration-300">
-            <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center mb-6 text-primary">
-              <Sparkle />
-            </div>
-            <h3 className="text-2xl text-white mb-3">{pillar.title}</h3>
-            <p className="text-white/80">{pillar.desc}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const AwarenessGrid = () => (
-  <section className="bg-background py-20 md:py-[80px]">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8">
-      <SectionLabel text="Learn & Discover" />
-      <h2 className="text-4xl md:text-5xl mb-12">Awareness Topics</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          "Childhood Oral Health", "Gum Disease", "Fluoride & Prevention", 
-          "Diabetes & Oral Health", "Nutrition & Teeth", "Oral Cancer Awareness"
-        ].map((topic, i) => (
-          <div key={i} className="bg-background-alt p-8 rounded-2xl group hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(47,94,58,0.12)] transition-all duration-300 cursor-pointer">
-            <div className="text-primary mb-4"><Sparkle /></div>
-            <h3 className="text-xl mb-2">{topic}</h3>
-            <p className="text-sm text-foreground/80 mb-6">Essential information and resources regarding {topic.toLowerCase()}.</p>
-            <div className="flex justify-end text-primary group-hover:translate-x-1 transition-transform">
-              <span>→</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  </section>
-);
-
-const EventsPreview = () => (
-  <section className="bg-background-alt py-20 md:py-[80px]">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8">
-      <SectionLabel text="Join Our Mission" />
-      <h2 className="text-4xl md:text-5xl mb-12">Upcoming Events</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-        {[1, 2, 3].map((_, i) => (
-          <div key={i} className="bg-background rounded-2xl overflow-hidden group hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(47,94,58,0.12)] transition-all duration-300 border border-stone/20">
-            <div className="p-6">
-              <div className="bg-primary text-white text-xs font-display uppercase tracking-widest inline-block px-3 py-1 rounded-sm mb-4">
-                Oct {15 + i}, 2026
-              </div>
-              <h3 className="text-xl mb-2 group-hover:text-primary transition-colors">Community Dental Camp {i + 1}</h3>
-              <p className="text-sm text-stone flex items-center gap-2 mb-4">
-                <span>📍</span> Lahore, Pakistan
-              </p>
-              <p className="text-foreground/80 text-sm mb-6">Free dental checkups and hygiene kits distribution for local families.</p>
-              <a href="#" className="text-primary font-display font-semibold text-sm uppercase tracking-widest hover:underline">
-                View Event
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="text-center">
-        <button className="border-2 border-primary text-primary hover:bg-primary hover:text-white font-display text-sm tracking-[0.1em] uppercase px-8 py-4 rounded-sm transition-colors">
-          See All Events
-        </button>
-      </div>
-    </div>
-  </section>
-);
-
-const GetInvolved = () => (
-  <section className="bg-primary py-24 md:py-[120px] text-center relative overflow-hidden">
-    <div className="absolute left-10 top-1/2 -translate-y-1/2 text-accent/20 w-32 h-32 hidden md:block"><Sparkle className="w-full h-full" /></div>
-    <div className="absolute right-10 top-1/2 -translate-y-1/2 text-accent/20 w-32 h-32 hidden md:block"><Sparkle className="w-full h-full" /></div>
-    
-    <div className="max-w-2xl mx-auto px-4 relative z-10">
-      <h2 className="text-4xl md:text-5xl text-white mb-6">Ready to make an impact?</h2>
-      <p className="text-white/90 text-lg mb-10">Whether you are a dental professional, a student, or someone who cares about community health, there is a place for you at NOHAS.</p>
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
-        <button className="bg-white text-primary hover:bg-background font-display text-sm tracking-[0.1em] uppercase px-8 py-4 rounded-sm transition-colors">
-          Become a Volunteer
-        </button>
-        <button className="border-2 border-white text-white hover:bg-white hover:text-primary font-display text-sm tracking-[0.1em] uppercase px-8 py-4 rounded-sm transition-colors">
-          Partner With Us
-        </button>
-      </div>
-    </div>
-  </section>
-);
-
-const Newsletter = () => (
-  <section className="bg-background py-20 md:py-[80px]">
-    <div className="max-w-xl mx-auto px-4 text-center">
-      <h3 className="text-2xl mb-2">Stay Updated</h3>
-      <p className="text-foreground/80 mb-8">Subscribe to our newsletter for the latest awareness campaigns and events.</p>
-      <form className="flex flex-col sm:flex-row gap-2" onSubmit={(e) => e.preventDefault()}>
-        <input 
-          type="email" 
-          placeholder="Email Address" 
-          className="flex-1 bg-transparent border border-stone px-4 py-3 rounded-sm focus:outline-none focus:border-primary transition-colors"
-        />
-        <button className="bg-primary hover:bg-primary-hover text-white font-display text-sm tracking-[0.1em] uppercase px-6 py-3 rounded-sm transition-colors">
-          Subscribe
-        </button>
-      </form>
-    </div>
-  </section>
-);
-
-const Footer = () => (
-  <footer className="bg-jet pt-16 pb-8 border-t border-jet">
-    <div className="max-w-[1200px] mx-auto px-4 md:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
-        <div>
-          <div className="flex items-center gap-2 text-white font-display font-semibold text-2xl mb-4">
-            <Sparkle className="text-secondary w-6 h-6" />
-            <span>NOHAS</span>
-          </div>
-          <p className="text-stone text-sm">Promoting Awareness. Building Healthier Smiles.</p>
-        </div>
-        <div>
-          <h4 className="text-white font-display uppercase tracking-widest text-sm mb-6">Quick Links</h4>
-          <ul className="space-y-3 text-stone text-sm">
-            <li><a href="#" className="hover:text-background transition-colors">Home</a></li>
-            <li><a href="#" className="hover:text-background transition-colors">About Us</a></li>
-            <li><a href="#" className="hover:text-background transition-colors">Events</a></li>
-            <li><a href="#" className="hover:text-background transition-colors">Get Involved</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-white font-display uppercase tracking-widest text-sm mb-6">Resources</h4>
-          <ul className="space-y-3 text-stone text-sm">
-            <li><a href="#" className="hover:text-background transition-colors">Awareness Topics</a></li>
-            <li><a href="#" className="hover:text-background transition-colors">Dental Clinics</a></li>
-            <li><a href="#" className="hover:text-background transition-colors">Volunteer Portal</a></li>
-          </ul>
-        </div>
-        <div>
-          <h4 className="text-white font-display uppercase tracking-widest text-sm mb-6">Contact</h4>
-          <ul className="space-y-3 text-stone text-sm">
-            <li>info@nohas.org.pk</li>
-            <li>+92 300 1234567</li>
-            <li>Lahore, Pakistan</li>
-          </ul>
-        </div>
-      </div>
-      <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4 text-stone text-sm">
-        <p>&copy; {new Date().getFullYear()} NOHAS. Designed for a Healthier Pakistan.</p>
-        <div className="flex gap-4">
-          {/* Placeholder for social icons */}
-          <a href="#" className="hover:text-secondary transition-colors">IN</a>
-          <a href="#" className="hover:text-secondary transition-colors">FB</a>
-          <a href="#" className="hover:text-secondary transition-colors">X</a>
-        </div>
-      </div>
-    </div>
-  </footer>
-);
-
-export default function App() {
-  return (
-    <div className="min-h-screen">
-      <Navbar />
-      <Hero />
-      <ImpactStats />
-      <AboutPreview />
-      <CorePillars />
-      <AwarenessGrid />
-      <EventsPreview />
-      <GetInvolved />
-      <Newsletter />
-      <Footer />
-    </div>
-  );
+    {open && <div className="fixed inset-x-4 top-[84px] z-40 border border-accent bg-background p-5 shadow-xl md:hidden"><div className="grid gap-2">{links.map(([label, id]) => <a key={id} href={`#${id}`} onClick={() => setOpen(false)} className="border-b border-accent/60 py-3 font-display text-sm uppercase tracking-[0.12em]">{label}</a>)}<a href="#get-involved" onClick={() => setOpen(false)} className="button-primary mt-3 justify-center">Join the movement</a></div></div>}
+  </>
 }
+
+const Hero = () => <section id="home" className="relative overflow-hidden bg-background pt-[76px]"><div className="leaf-mark right-[-4%] top-[14%]">✦</div><div data-motion="hero" className="mx-auto grid min-h-[680px] max-w-[1240px] items-center gap-12 px-5 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28"><div><SectionLabel text="For people, by people" /><h1 className="max-w-3xl text-6xl leading-[0.95] md:text-8xl">A healthier smile for every community.</h1><p className="mt-7 max-w-xl text-lg leading-relaxed text-foreground/75">NOHAS connects dental professionals, volunteers, and communities across Pakistan through education, outreach, and practical care.</p><div className="mt-9 flex flex-wrap gap-3"><a href="#impact" className="button-primary">See our impact <Arrow /></a><a href="#about" className="button-secondary">Our story</a></div><div className="mt-12 flex items-center gap-4 font-display text-xs uppercase tracking-[0.12em] text-stone"><span className="h-px w-10 bg-stone" />National Oral Health Awareness Society</div></div><div className="relative"><div className="hero-image"><img src="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&w=1000&q=85" alt="Dental professional caring for a patient" /></div><div className="absolute -bottom-5 -left-5 bg-primary p-5 text-white shadow-xl md:-left-8"><p className="font-serif text-4xl">2026</p><p className="font-display text-[10px] uppercase tracking-[0.16em] text-accent">Founded for healthier Pakistan</p></div></div></div></section>
+
+const ImpactStats = () => <section id="impact" data-reveal className="border-y border-stone/30 bg-background-alt"><div className="mx-auto grid max-w-[1240px] grid-cols-2 md:grid-cols-4">{[{ n: 45200, s: "+", l: "Treated patients" }, { n: 310, s: "+", l: "Camps done" }, { n: 24, s: "", l: "Provinces reached" }, { n: 85, s: "+", l: "Locations covered" }].map((stat, index) => <div key={stat.l} className={`impact-stat ${index < 3 ? "md:border-r md:border-stone/40" : ""}`}><strong data-counter data-counter-target={stat.n} data-counter-suffix={stat.s}>0{stat.s}</strong><span>{stat.l}</span></div>)}</div></section>
+
+const About = () => <section id="about" data-reveal className="section-shell"><div className="grid items-center gap-14 lg:grid-cols-[0.85fr_1.15fr]"><div><SectionLabel text="The NOHAS promise" /><h2>Clinical care with a community pulse.</h2><p className="mt-6 text-lg text-foreground/75">The National Oral Health Awareness Society is a non-profit platform for public health action. We make prevention understandable, bring screening closer to underserved communities, and give the next generation of dental professionals a way to serve.</p><div className="mt-8 grid gap-5 border-t border-stone/40 pt-6 sm:grid-cols-2"><div><p className="font-display text-sm font-semibold text-primary">Vision</p><p className="mt-2 text-sm text-foreground/70">A vibrant Pakistan where every citizen can protect their oral health.</p></div><div><p className="font-display text-sm font-semibold text-primary">Mission</p><p className="mt-2 text-sm text-foreground/70">Bridge innovation and awareness for healthier smiles.</p></div></div></div><div className="about-gallery relative grid grid-cols-[1.1fr_0.9fr] gap-4"><img className="about-gallery-image" src="https://images.unsplash.com/photo-1588776814546-daab30f310ce?auto=format&fit=crop&w=800&q=85" alt="Dental tools ready for a community screening" /><img className="about-gallery-image" src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=85" alt="Healthcare worker with a young patient" /><span className="absolute bottom-5 left-5 bg-background px-4 py-3 font-display text-xs uppercase tracking-[0.1em] text-primary">Education • prevention • access</span></div></div></section>
+
+const Pillars = () => <section id="awareness" data-reveal className="bg-primary py-24 text-white"><div className="mx-auto max-w-[1240px] px-5 lg:px-8"><SectionLabel text="Scope & core pillars" light /><div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end"><h2 className="text-white">Small habits. Stronger communities.</h2><p className="max-w-xl text-white/75">From school outreach to sustainable practice, every program is designed to make oral health part of everyday life.</p></div><div className="mt-14 grid gap-4 md:grid-cols-3">{[{ title: "Oral health education", text: "School programs and practical awareness sessions that turn knowledge into daily care." }, { title: "Outreach campaigns", text: "Field camps, screening drives, and mobile support for high-need communities." }, { title: "Sustainable practice", text: "Green dentistry training and ethical dental exchange for a healthier future." }].map((pillar, i) => <article key={pillar.title} className="pillar-card"><span className="pillar-number">0{i + 1}</span><h3 className="mt-16 text-white">{pillar.title}</h3><p className="mt-3 text-white/70">{pillar.text}</p><a href="#journal" className="mt-8 inline-flex items-center gap-2 font-display text-xs uppercase tracking-[0.12em] text-accent">Explore <Arrow /></a></article>)}</div></div></section>
+
+const Leadership = () => <section data-reveal className="section-shell bg-background-alt"><SectionLabel text="People behind the work" /><div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><h2>Leadership with hands in the field.</h2><p className="max-w-md text-foreground/70">A structure built for good governance, responsive coordination, and meaningful volunteer support.</p></div><div className="mt-12 grid gap-5 md:grid-cols-2"><article className="outlined-panel"><p className="eyebrow">Executive leadership</p><ul className="role-list"><li><strong>President-Founder</strong><span>Strategic vision, direction, and partnerships.</span></li><li><strong>Secretary Establishment</strong><span>Governance, setup, and compliance.</span></li><li><strong>General Secretary</strong><span>Coordination, documentation, and communications.</span></li></ul></article><article className="outlined-panel"><p className="eyebrow">Operational leads</p><ul className="role-list"><li><strong>Secretary Outreach Events</strong><span>Camp coordination and execution.</span></li><li><strong>Joint Secretary</strong><span>Volunteer management and resources.</span></li><li><strong>Regional volunteers</strong><span>Local relationships and community trust.</span></li></ul></article></div></section>
+
+const Journal = () => <section id="journal" data-reveal className="section-shell"><div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr]"><div><SectionLabel text="Journal & event articles" /><h2>Field notes worth sharing.</h2><p className="mt-5 text-foreground/70">An interactive publication hub for event reports, clinical insights, and student-led research from across the country.</p><a href="mailto:editorial@nohasportal.org" className="mt-8 inline-flex items-center gap-2 font-display text-sm font-semibold text-primary">Submit an article <Arrow /></a></div><div className="grid gap-4 sm:grid-cols-2">{[{ tag: "Field report", title: "What a school screening teaches us about prevention" }, { tag: "Clinical insight", title: "The everyday choices behind healthier gums" }, { tag: "Student voice", title: "Learning care through community service" }, { tag: "Oral hygiene", title: "A practical guide for families" }].map((item) => <article key={item.title} className="content-card"><span className="tag">{item.tag}</span><h3 className="mt-7">{item.title}</h3><a href="#get-involved" className="mt-8 inline-flex text-primary"><Arrow /></a></article>)}</div></div></section>
+
+const Membership = () => <section data-reveal className="bg-background-alt py-20"><div className="mx-auto grid max-w-[1240px] gap-10 px-5 lg:grid-cols-[1.1fr_0.9fr] lg:px-8"><div><SectionLabel text="Membership & benefits" /><h2>Bring your skills closer to impact.</h2><p className="mt-5 max-w-xl text-lg text-foreground/70">Membership registration is streamlined through Google Forms. Join a professional network with practical opportunities to serve and grow.</p></div><div className="benefit-box"><p className="eyebrow">Members receive</p>{["Priority deployment in national camps", "Participation certificates and leadership badges", "Continuing education resources", "Mentorship with experienced dental surgeons"].map((benefit) => <div key={benefit} className="flex gap-3 border-b border-primary/15 py-3 text-sm"><span className="text-primary">✦</span><span>{benefit}</span></div>)}<a href="#get-involved" className="button-primary mt-5 w-full justify-center">Register interest <Arrow /></a></div></div></section>
+
+const Partners = () => <section data-reveal className="section-shell"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><SectionLabel text="Sponsor us" /><h2>Good work grows in partnership.</h2></div><p className="max-w-md text-foreground/70">NOHAS is proud to work with 34+ major brands and corporate sponsors who provide clinical supplies and financial backing.</p></div><div className="partner-row mt-12">{["DENTALCARE", "CARE+", "ORALIS", "MEDI", "GREEN SMILE", "COMMUNITY FIRST"].map((name) => <span key={name}>{name}</span>)}</div></section>
+
+const Gallery = () => { const [filter, setFilter] = useState("All"); const items = [{ place: "Punjab", year: "2026", title: "Lahore school screening", image: "https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&w=800&q=80" }, { place: "Sindh", year: "2026", title: "Community care day", image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" }, { place: "Punjab", year: "2025", title: "Mobile dental unit", image: "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?auto=format&fit=crop&w=800&q=80" }]; const visible = items.filter((item) => filter === "All" || item.place === filter || item.year === filter); return <section data-reveal className="bg-background-alt py-24"><div className="mx-auto max-w-[1240px] px-5 lg:px-8"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><SectionLabel text="Gallery of previous events" /><h2>Care, captured in the field.</h2></div><div className="flex flex-wrap gap-2">{["All", "Punjab", "Sindh", "2026"].map((item) => <button type="button" key={item} onClick={() => setFilter(item)} className={`filter-button ${filter === item ? "active" : ""}`}>{item}</button>)}</div></div><div className="mt-12 grid gap-5 md:grid-cols-3">{visible.map((item) => <article key={item.title} className="gallery-card"><img src={item.image} alt={item.title} /><div><span className="eyebrow">{item.place} • {item.year}</span><h3>{item.title}</h3></div></article>)}</div></div></section> }
+
+const Events = () => <section id="events" data-reveal className="section-shell"><SectionLabel text="Online awareness sessions" /><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><h2>Learn from specialists.</h2><a href="#contact" className="button-secondary">View all sessions <Arrow /></a></div><div className="mt-12 grid gap-5 md:grid-cols-3">{[{ date: "18 OCT", title: "Early oral cancer diagnosis", type: "Clinical webinar" }, { date: "02 NOV", title: "Preventive pediatric dentistry", type: "Public session" }, { date: "16 NOV", title: "Home care for every family", type: "Community class" }].map((event) => <article key={event.title} className="event-card"><div className="date-badge"><strong>{event.date.split(" ")[0]}</strong><span>{event.date.split(" ")[1]}</span></div><p className="eyebrow">{event.type}</p><h3>{event.title}</h3><p className="mt-3 text-sm text-foreground/65">Hosted virtually by a NOHAS specialist for students and the general public.</p><a href="#contact" className="mt-7 inline-flex items-center gap-2 font-display text-xs uppercase tracking-[0.12em] text-primary">Register <Arrow /></a></article>)}</div></section>
+
+const Pipeline = () => <section data-reveal className="bg-primary py-12 text-white"><div className="mx-auto max-w-[1240px] px-5 lg:px-8"><div className="flex flex-col justify-between gap-3 md:flex-row md:items-end"><div><SectionLabel text="How do we work?" light /><h2 className="text-white">The route from need to impact.</h2></div><p className="max-w-sm text-sm leading-relaxed text-white/65">Follow the NOHAS field mission from the first signal to the finish line.</p></div><div className="race-map" aria-label="NOHAS operational race map"><div className="race-map-grid" /><div className="race-map-glow" /><svg className="race-route race-route-desktop" viewBox="0 0 1000 360" preserveAspectRatio="none" aria-hidden="true"><path d="M55 270 C125 65 240 55 320 205 S490 335 570 135 S760 60 945 160" /><path d="M55 270 C125 65 240 55 320 205 S490 335 570 135 S760 60 945 160" className="race-route-dash" /></svg><svg className="race-route race-route-mobile" viewBox="0 0 360 600" preserveAspectRatio="none" aria-hidden="true"><path d="M55 45 C310 70 315 150 90 190 S45 310 280 350 S320 465 90 535" /><path d="M55 45 C310 70 315 150 90 190 S45 310 280 350 S320 465 90 535" className="race-route-dash" /></svg><ol>{[{ title: "Location sourcing", text: "Find high-need communities and rural schools." }, { title: "Sample collection & assessment", text: "Listen to local needs through field surveys." }, { title: "Volunteer recruitment", text: "Onboard vetted applicants through structured forms." }, { title: "Fundraising & allocation", text: "Allocate support transparently for logistics and supplies." }, { title: "Execution & impact reporting", text: "Deploy care, record outcomes, and report back." }].map((step, i) => <li key={step.title} className={`race-checkpoint race-checkpoint-${i + 1}`}><span className="race-checkpoint-number">0{i + 1}</span><div><h3 className="text-white">{step.title}</h3><p className="text-white/65">{step.text}</p></div></li>)}</ol></div></div></section>
+
+const GetInvolved = () => { const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setLoading(true); setError(""); const form = new FormData(event.currentTarget); try { await submitApiForm("volunteers", Object.fromEntries(form.entries()) as Record<string, string>); setSubmitted(true); event.currentTarget.reset() } catch (submissionError) { setError(submissionError instanceof Error ? submissionError.message : "Please try again.") } finally { setLoading(false) } }; return <section id="get-involved" data-reveal className="section-shell"><div className="grid gap-12 lg:grid-cols-[0.75fr_1.25fr]"><div><SectionLabel text="How to volunteer with us" /><h2>Make your next contribution count.</h2><p className="mt-5 text-foreground/70">Dental students, clinicians, and supporters can register their preferred domain: clinical, logistics, education, or media.</p><div className="mt-10 grid gap-3 sm:grid-cols-2">{["Volunteer", "Donate", "Partner", "Spread awareness"].map((item) => <div key={item} className="border-l-2 border-primary bg-background-alt p-4 font-display text-sm">{item}</div>)}</div></div><form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2"><label>Full name<input required name="name" /></label><label>Email<input required type="email" name="email" /></label><label>City<input required name="city" /></label><label>Area of interest<select name="interest" defaultValue="Clinical"><option>Clinical</option><option>Logistics</option><option>Education</option><option>Media</option></select></label><label className="sm:col-span-2">Message<textarea name="message" rows={4} /></label><div className="flex flex-wrap items-center gap-4 sm:col-span-2"><button className="button-primary" type="submit" disabled={loading}>{loading ? "Sending..." : "Send application"} <Arrow /></button>{submitted && <p role="status" className="text-sm font-semibold text-primary">Thank you. We will be in touch.</p>}{error && <p role="alert" className="text-sm font-semibold text-red-700">{error}</p>}</div></form></div></section> }
+
+const Merchandise = () => <section data-reveal className="bg-background-alt py-24"><div className="mx-auto max-w-[1240px] px-5 lg:px-8"><div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center"><div><SectionLabel text="Official merchandise" /><h2>Wear the mission forward.</h2><p className="mt-5 text-foreground/70">Custom T-shirts, ceramic mugs, and branded keychains. 100% of net profit funds rural dental camps and awareness campaigns.</p><a href="#contact" className="button-primary mt-8">Explore the collection <Arrow /></a></div><div className="merch-grid">{[{ name: "Field T-shirt", image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=700&q=85" }, { name: "NOHAS ceramic mug", image: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?auto=format&fit=crop&w=700&q=85" }, { name: "Branded keychain", image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=700&q=85" }].map((item) => <article key={item.name}><img src={item.image} alt={item.name} /><p>{item.name}</p></article>)}</div></div></div></section>
+
+const Contact = () => { const [submitted, setSubmitted] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false); const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setLoading(true); setError(""); const form = new FormData(event.currentTarget); try { await submitApiForm("contact", Object.fromEntries(form.entries()) as Record<string, string>); setSubmitted(true); event.currentTarget.reset() } catch (submissionError) { setError(submissionError instanceof Error ? submissionError.message : "Please try again.") } finally { setLoading(false) } }; return <section id="contact" data-reveal className="section-shell"><div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr]"><div><SectionLabel text="Start a conversation" /><h2>Let’s make care more reachable.</h2><div className="mt-10 space-y-6"><div><p className="eyebrow">Email</p><a className="text-lg text-primary" href="mailto:info.nohas@gmail.com">info.nohas@gmail.com</a></div><div><p className="eyebrow">Web</p><p className="text-lg">nohasorg.pk</p></div><div><p className="eyebrow">Office</p><p className="text-lg">Lahore, Punjab, Pakistan</p></div></div></div><form onSubmit={handleSubmit} className="grid gap-4 sm:grid-cols-2"><label>Name<input required name="name" /></label><label>Email<input required type="email" name="email" /></label><label className="sm:col-span-2">Subject<input required name="subject" /></label><label className="sm:col-span-2">Message<textarea required name="message" rows={5} /></label><div className="sm:col-span-2 flex items-center gap-4"><button className="button-primary" type="submit" disabled={loading}>{loading ? "Sending..." : "Send message"} <Arrow /></button>{submitted && <p role="status" className="text-sm text-primary">Message received. Thank you.</p>}{error && <p role="alert" className="text-sm font-semibold text-red-700">{error}</p>}</div></form></div></section> }
+
+const Footer = () => { const [subscribed, setSubscribed] = useState(false); const [error, setError] = useState(""); const handleSubscribe = async (event: React.FormEvent<HTMLFormElement>) => { event.preventDefault(); setError(""); const form = new FormData(event.currentTarget); try { await submitApiForm("newsletter", Object.fromEntries(form.entries()) as Record<string, string>); setSubscribed(true); event.currentTarget.reset() } catch (submissionError) { setError(submissionError instanceof Error ? submissionError.message : "Please try again.") } }; return <footer className="bg-jet py-16 text-stone"><div className="mx-auto grid max-w-[1240px] gap-12 px-5 md:grid-cols-[1.2fr_0.8fr_0.8fr_1fr] lg:px-8"><div><Logo dark /><p className="mt-5 max-w-xs text-sm leading-relaxed">Promoting awareness. Building healthier smiles across Pakistan.</p><form onSubmit={handleSubscribe} className="mt-7 flex max-w-sm flex-wrap gap-2"><label className="sr-only" htmlFor="newsletter-email">Email address</label><input id="newsletter-email" className="!min-h-11 !flex-1 !border-white/30 !text-white" required type="email" name="email" placeholder="Your email address" /><button className="button-primary" type="submit">{subscribed ? "Subscribed" : "Subscribe"}</button></form>{error && <p role="alert" className="mt-2 text-xs text-red-300">{error}</p>}</div><div><p className="footer-heading">Explore</p><div className="footer-links"><a href="#about">About NOHAS</a><a href="#awareness">Awareness</a><a href="#events">Sessions</a><a href="#get-involved">Volunteer</a></div></div><div><p className="footer-heading">Write to us</p><div className="footer-links"><a href="mailto:info.nohas@gmail.com">info.nohas@gmail.com</a><a href="mailto:editorial@nohasportal.org">Editorial desk</a><a href="#contact">Partner with us</a></div></div><div><p className="footer-heading">Follow the work</p><div className="footer-links"><a href="#contact">Instagram · nohasorg.pk</a><a href="#contact">Facebook · nohasorg.pk</a><a href="#contact">LinkedIn · NOHAS</a></div></div></div><div className="mx-auto mt-14 flex max-w-[1240px] flex-col justify-between gap-3 border-t border-white/10 px-5 pt-6 text-xs lg:flex-row lg:px-8"><span>© 2026 NOHAS. Designed for a healthier Pakistan.</span><span>National Oral Health Awareness Society</span></div></footer> }
+
+export default function App() { const pageRef = useRef<HTMLDivElement>(null); usePageMotion(pageRef); return <div ref={pageRef} className="min-h-screen overflow-hidden"><Navbar /><main><Hero /><ImpactStats /><About /><Pillars /><Leadership /><Journal /><Membership /><Partners /><Gallery /><Events /><Pipeline /><GetInvolved /><Merchandise /><Contact /></main><Footer /></div> }
